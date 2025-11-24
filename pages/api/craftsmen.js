@@ -5,7 +5,8 @@ const dbPath = path.join(process.cwd(), 'db.json');
 
 export default function handler(req, res) {
   try {
-    const db = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
+    const json = fs.readFileSync(dbPath, 'utf-8');
+    const db = JSON.parse(json);
 
     if (req.method === 'GET') {
       res.status(200).json(db.craftsmen);
