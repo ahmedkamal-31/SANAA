@@ -1,35 +1,37 @@
-import clientPromise from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
+import connectToDatabase from "@/lib/mongodb";
+import mongoose from "mongoose";
+
+const CraftsmanSchema = new mongoose.Schema({
+  name: String,
+  job: String,
+  rating: Number,
+  distance: String,
+  reviews: [String],
+});
+
+const Craftsman =
+  mongoose.models.Craftsman || mongoose.model("Craftsman", CraftsmanSchema);
 
 export default async function handler(req, res) {
-  try {
-    const client = await clientPromise;
-    const db = client.db('sanaa');
-    const collection = db.collection('craftsmen');
+  await connectToDatabase();
 
-    if (req.method === 'GET') {
-      const craftsmen = await collection.find({}).toArray();
-      return res.status(200).json(craftsmen);
-    }
-
-    if (req.method === 'POST') {
-      const data = req.body;
-      const result = await collection.insertOne(data);
-      return res.status(201).json(result.ops ? result.ops[0] : result);
-    }
-
-    if (req.method === 'DELETE') {
-      const { id } = req.body;
-      if (!id) {
-        return res.status(400).json({ error: 'Missing id' });
-      }
-      const result = await collection.deleteOne({ _id: new ObjectId(id) });
-      return res.status(200).json(result);
-    }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('API error:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+  if (req.method === "GET") {
+    const craftsmen = await Craftsman.find({});
+    return res.status(200).json(craftsmen);
   }
+
+  if (req.method === "POST") {
+    const body = req.body;
+    const newCraftsman = new Craftsman(body);
+    await newCraftsman.save();
+    return res.status(201).json(newCraftsman);
+  }
+
+  if (req.method === "DELETE") {
+    const { id } = req.body;
+    await Craftsman.findByIdAndDelete(id);
+    return res.status(200).json({ ok: true });
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
 }
