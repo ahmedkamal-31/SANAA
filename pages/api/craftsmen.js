@@ -1,24 +1,23 @@
-import fs from 'fs'
-import path from 'path'
-const dbPath = path.join(process.cwd(),'db.json')
+import clientPromise from "@/lib/mongodb";
 
-export default function handler(req,res){
-  const db = JSON.parse(fs.readFileSync(dbPath))
-  if(req.method==='GET'){
-    res.status(200).json(db.craftsmen)
-  } else if(req.method==='POST'){
-    const body = req.body
-    const newId = Math.max(0,...db.craftsmen.map(c=>c.id))+1
-    const item = {id:newId, ...body}
-    db.craftsmen.push(item)
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2))
-    res.status(201).json(item)
-  } else if(req.method==='DELETE'){
-    const {id} = req.body
-    db.craftsmen = db.craftsmen.filter(c=>c.id !== id)
-    fs.writeFileSync(dbPath, JSON.stringify(db, null, 2))
-    res.status(200).json({ok:true})
-  } else {
-    res.status(405).end()
+export default async function handler(req, res) {
+  const client = await clientPromise;
+  const db = client.db("sanaa");
+
+  if (req.method === "GET") {
+    const craftsmen = await db.collection("craftsmen").find().toArray();
+    return res.json(craftsmen);
+  }
+
+  if (req.method === "POST") {
+    const data = req.body;
+    const result = await db.collection("craftsmen").insertOne(data);
+    return res.status(201).json(result);
+  }
+
+  if (req.method === "DELETE") {
+    const { id } = req.body;
+    const result = await db.collection("craftsmen").deleteOne({ id });
+    return res.status(200).json(result);
   }
 }
